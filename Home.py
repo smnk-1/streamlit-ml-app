@@ -14,8 +14,8 @@ col1, col2 = st.columns([1, 2])
 with col1:
     try:
         image = Image.open('images/person_photo.png')
-        
-        st.image(image, width=00)
+
+        st.image(image, width=300)
     except:
         st.warning("Фото не найдено!")
 
