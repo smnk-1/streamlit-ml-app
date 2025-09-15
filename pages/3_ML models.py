@@ -9,7 +9,8 @@ st.set_page_config(page_title="Model Selector", layout="wide")
 
 st.title("Выбор и применение ML-модели")
 
-model_options = {
+# Словарь с моделями и путями
+MODEL_PATHS = {
     "Линейная регрессия": "models/l1r.pkl",
     "Бустинг": "models/boost.pkl",
     "Бэггинг регрессор": "models/bag_regr.pkl",
@@ -17,8 +18,26 @@ model_options = {
     "Полносвязная нейронная сеть": "models/fcnn copy.pkl"
 }
 
-selected_name = st.selectbox("Выберите модель для предсказания", list(model_options.keys()))
-model_path = model_options[selected_name]
+# Кешируем загрузку моделей
+@st.cache_resource
+def load_model(model_path):
+    return joblib.load(model_path)
+
+# Загрузка всех моделей в словарь
+models_cache = {}
+for name, path in MODEL_PATHS.items():
+    try:
+        models_cache[name] = load_model(path)
+        # st.success(f"Модель '{name}' успешно загружена")
+    except Exception as e:
+        st.warning(f"Не удалось загрузить модель '{name}': {str(e)}")
+
+st.header("Выбор моделей")
+selected_models = st.multiselect(
+    "Выберите модели для предсказания",
+    options=list(MODEL_PATHS.keys()),
+    default=list(MODEL_PATHS.keys())[0]
+)
 
 st.header("Загрузка данных")
 uploaded_file = st.file_uploader("Загрузите CSV-файл с данными", type="csv")
@@ -65,14 +84,44 @@ else:
     st.dataframe(data)
 
 if st.button("Получить предсказание"):
+    if not selected_models:
+        st.warning("Пожалуйста, выберите хотя бы одну модель.")
+        st.stop()
+    
     try:
-        model = joblib.load(model_path)
-        data = preprocess(data)
-        predictions = model.predict(data)
-        st.success("Предсказание выполнено")
-        for i, pred in enumerate(predictions):
-            st.write(f"Объект {i+1}: {abs(pred):,.2f} s", unsafe_allow_html=True)
-    except FileNotFoundError:
-        st.error(f"Файл модели '{model_path}' не найден. Убедитесь, что он находится в рабочей директории.")
+        processed_data = preprocess(data.copy())
     except Exception as e:
-        st.error(f"Ошибка при предсказании: {e}")
+        st.error(f"Ошибка при предобработке данных: {e}")
+        st.stop()
+    
+    results = {}
+    for model_name in selected_models:
+        if model_name not in models_cache:
+            st.error(f"Модель '{model_name}' недоступна для предсказания")
+            continue
+            
+        try:
+            model = models_cache[model_name]
+            predictions = model.predict(processed_data)
+            results[model_name] = predictions
+        except Exception as e:
+            st.error(f"Ошибка при предсказании моделью '{model_name}': {e}")
+    
+    if results:
+        st.success("Предсказания успешно выполнены")
+        st.subheader("Результаты предсказаний")
+        
+        # Создаем DataFrame для отображения результатов
+        results_df = pd.DataFrame()
+        
+        for model_name, preds in results.items():
+            results_df[model_name] = [p for p in preds]
+        
+        # Добавляем индекс объектов
+        results_df.index = [f"Объект {i+1}" for i in range(len(results_df))]
+        
+        # Отображаем таблицу с результатами
+        st.dataframe(results_df.style.format("{:,.2f} s"))
+        
+    else:
+        st.warning("Нет результатов для отображения")
