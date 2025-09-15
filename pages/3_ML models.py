@@ -9,7 +9,6 @@ st.set_page_config(page_title="Model Selector", layout="wide")
 
 st.title("Выбор и применение ML-модели")
 
-# Словарь с моделями и путями
 MODEL_PATHS = {
     "Линейная регрессия": "models/l1r.pkl",
     "Бустинг": "models/boost.pkl",
@@ -18,17 +17,14 @@ MODEL_PATHS = {
     "Полносвязная нейронная сеть": "models/fcnn copy.pkl"
 }
 
-# Кешируем загрузку моделей
 @st.cache_resource
 def load_model(model_path):
     return joblib.load(model_path)
 
-# Загрузка всех моделей в словарь
 models_cache = {}
 for name, path in MODEL_PATHS.items():
     try:
         models_cache[name] = load_model(path)
-        # st.success(f"Модель '{name}' успешно загружена")
     except Exception as e:
         st.warning(f"Не удалось загрузить модель '{name}': {str(e)}")
 
@@ -118,7 +114,7 @@ if st.button("Получить предсказание"):
             results_df[model_name] = [p for p in preds]
         
         # Добавляем индекс объектов
-        results_df.index = [f"Объект {i+1}" for i in range(len(results_df))]
+        # results_df.index = [f"Объект {i+1}" for i in range(len(results_df))]
         
         # Отображаем таблицу с результатами
         st.dataframe(results_df.style.format("{:,.2f} s"))

@@ -3,7 +3,8 @@ from PIL import Image
 
 st.set_page_config(
     page_title="Taxi ML-App",
-    page_icon="👨‍💻")
+    page_icon="👨‍💻",
+    layout='centered')
 
 st.title("Когда будет моё такси?")
 
