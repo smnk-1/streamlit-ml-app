@@ -3,4 +3,7 @@ pandas
 numpy
 joblib
 preprocessing
-sklearn
+scikit-learn
+shapely
+geopy
+category_encoders
